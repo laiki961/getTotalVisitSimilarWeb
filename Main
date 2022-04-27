@@ -1,0 +1,55 @@
+function reloadEntireSheet() {
+  // var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Domains Traffic");
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var drng = sheet.getDataRange();
+  var rng = sheet.getRange(2,1, drng.getLastRow()-1, drng.getLastColumn());
+  var rngValues = rng.getValues();
+  Logger.log("rngValues: "+rngValues);
+
+
+  //Clear all the content expect header
+  if(drng.getLastRow() > 1){
+    sheet.getRange(2,3, drng.getLastRow()-1, drng.getLastColumn()).clear();
+    sheet.getRange(2,4, drng.getLastRow()-1, drng.getLastColumn()).clear();
+    sheet.getRange(2,5, drng.getLastRow()-1, drng.getLastColumn()).clear();
+  }
+  Logger.log("Clear");
+
+    const start_date = sheet.getRange(1,3).getValue();
+    const end_date = sheet.getRange(1,5).getValue();    
+  const similarweb_api_key = "2d5424950fd24d8eb0d4da4d2b58ff9b";
+  for(var i=0; i<rngValues.length; i++){
+    Logger.log(i);
+    //row, col
+    //get Value start from Row 2 Column B - B2, B3, B4 (same column)
+    var domain = sheet.getRange(i+2,2).getValue();
+    Logger.log(domain);
+    var url = "https://api.similarweb.com/v1/website/"+domain+
+    "/total-traffic-and-engagement/visits?api_key="+similarweb_api_key+
+    "&start_date="+start_date+"&end_date="+end_date+
+    "&country=world&granularity=monthly&main_domain_only=false&format=json&show_verified=false&mtd=false";
+    var urlString = url.toString();
+    Logger.log(urlString);
+
+    try{
+      var response = UrlFetchApp.fetch(urlString);
+      var json = response.getContentText();
+      var data = JSON.parse(json);
+      Logger.log(data);
+
+      var firstMonthVists = data.visits[0].visits;
+      var secMonthVists = data.visits[1].visits;
+      var thirdMonthVists = data.visits[2].visits;
+
+      Logger.log("fill in the firstMonthVists");
+      sheet.getRange(i+2,3).setValue([firstMonthVists]);
+      Logger.log("fill in the secMonthVists");
+      sheet.getRange(i+2,4).setValue([secMonthVists]);
+      Logger.log("fill in the thirdMonthVists");
+      sheet.getRange(i+2,5).setValue([thirdMonthVists]);
+    }catch(err){
+      Logger.log(err);
+    }
+  }
+}
+
